@@ -1,6 +1,8 @@
 from collections import OrderedDict
+
 from coreapi.compat import urlparse
-from openapi_codec.utils import get_method, get_encoding, get_location, get_links_from_document
+from openapi_codec.utils import (get_encoding, get_links_from_document,
+                                 get_location, get_method)
 
 
 def generate_swagger_object(document):
@@ -108,7 +110,8 @@ def _get_parameters(link, encoding):
     for field in link.fields:
         location = get_location(link, field)
         if location == 'form':
-            if encoding in ('multipart/form-data', 'application/x-www-form-urlencoded'):
+            if encoding in ('multipart/form-data',
+                            'application/x-www-form-urlencoded'):
                 # 'formData' in swagger MUST be one of these media types.
                 parameter = {
                     'name': field.name,
@@ -121,9 +124,7 @@ def _get_parameters(link, encoding):
             else:
                 # Expand coreapi fields with location='form' into a single swagger
                 # parameter, with a schema containing multiple properties.
-                schema_property = {
-                    'description': field.description
-                }
+                schema_property = {'description': field.description}
                 properties[field.name] = schema_property
                 if field.required:
                     required.append(field.name)
@@ -152,15 +153,19 @@ def _get_parameters(link, encoding):
             parameters.append(parameter)
 
     if properties:
-        parameters.append({
+        parameters_dict = {
             'name': 'data',
             'in': 'body',
             'schema': {
                 'type': 'object',
                 'properties': properties,
-                'required': required
             }
-        })
+        }
+        # Add required fields to the schema just if there are required
+        # params see https://github.com/core-api/python-openapi-codec/issues/16
+        if required:
+            parameters_dict['schema']['required'] = required
+        parameters.append(parameters_dict)
 
     return parameters
 
