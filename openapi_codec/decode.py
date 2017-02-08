@@ -1,6 +1,7 @@
 from coreapi import Document, Link, Field
 from coreapi.compat import string_types, urlparse
 from coreapi.exceptions import ParseError
+import coreschema
 
 
 def _parse_document(data, base_url=None):
@@ -37,22 +38,40 @@ def _parse_document(data, base_url=None):
                     schema = _get_dict(parameter, 'schema', dereference_using=data)
                     expanded = _expand_schema(schema)
                     if expanded is not None:
+                        # TODO: field schemas.
                         expanded_fields = [
-                            Field(name=field_name, location='form', required=is_required, description=field_description)
+                            Field(
+                                name=field_name,
+                                location='form',
+                                required=is_required,
+                                schema=coreschema.String(description=field_description)
+                            )
                             for field_name, is_required, field_description in expanded
                             if not any([field.name == field_name for field in fields])
                         ]
                         fields += expanded_fields
                     else:
+                        # TODO: field schemas.
                         field_description = _get_string(parameter, 'description')
-                        field = Field(name=name, location='body', required=required, description=field_description)
+                        field = Field(
+                            name=name,
+                            location='body',
+                            required=required,
+                            schema=coreschema.String(description=field_description)
+                        )
                         fields.append(field)
                 else:
                     if location == 'formData':
                         has_form = True
                         location = 'form'
                     field_description = _get_string(parameter, 'description')
-                    field = Field(name=name, location=location, required=required, description=field_description)
+                    # TODO: field schemas.
+                    field = Field(
+                        name=name,
+                        location=location,
+                        required=required,
+                        schema=coreschema.String(description=field_description)
+                    )
                     fields.append(field)
 
             link_consumes = get_strings(_get_list(operation, 'consumes', consumes))

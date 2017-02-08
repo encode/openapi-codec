@@ -1,5 +1,6 @@
 from openapi_codec import OpenAPICodec
 import coreapi
+import coreschema
 
 
 codec = OpenAPICodec()
@@ -10,15 +11,15 @@ doc = coreapi.Document(
         'simple_link': coreapi.Link('/simple_link/', description='example link'),
         'location': {
             'query': coreapi.Link('/location/query/', fields=[
-                coreapi.Field(name='a', description='example field', required=True),
+                coreapi.Field(name='a', required=True, schema=coreschema.String(description='example field')),
                 coreapi.Field(name='b')
             ]),
             'form': coreapi.Link('/location/form/', action='post', fields=[
-                coreapi.Field(name='a', description='example field', required=True),
+                coreapi.Field(name='a', required=True, schema=coreschema.String(description='example field')),
                 coreapi.Field(name='b'),
             ]),
             'body': coreapi.Link('/location/body/', action='post', fields=[
-                coreapi.Field(name='example', location='body', description='example field')
+                coreapi.Field(name='example', location='body')
             ]),
             'path': coreapi.Link('/location/path/{id}/', fields=[
                 coreapi.Field(name='id', location='path', required=True)
@@ -69,12 +70,13 @@ def test_mapping():
             coreapi.Field(
                 name='a',
                 location='query',
-                description='example field',
+                schema=coreschema.String(description='example field'),
                 required=True
             ),
             coreapi.Field(
                 name='b',
-                location='query'
+                location='query',
+                schema=coreschema.String()
             )
         ]
     )
@@ -86,7 +88,8 @@ def test_mapping():
             coreapi.Field(
                 name='id',
                 location='path',
-                required=True
+                required=True,
+                schema=coreschema.String()
             )
         ]
     )
@@ -100,11 +103,12 @@ def test_mapping():
                 name='a',
                 location='form',
                 required=True,
-                description='example field'
+                schema=coreschema.String(description='example field')
             ),
             coreapi.Field(
                 name='b',
-                location='form'
+                location='form',
+                schema=coreschema.String()
             )
         ]
     )
@@ -117,8 +121,9 @@ def test_mapping():
             coreapi.Field(
                 name='example',
                 location='body',
-                description='example field'
+                schema=coreschema.String()
             )
+
         ]
     )
 
@@ -130,11 +135,13 @@ def test_mapping():
             coreapi.Field(
                 name='a',
                 location='form',
-                required=True
+                required=True,
+                schema=coreschema.String()
             ),
             coreapi.Field(
                 name='b',
-                location='form'
+                location='form',
+                schema=coreschema.String()
             )
         ]
     )
@@ -147,11 +154,13 @@ def test_mapping():
             coreapi.Field(
                 name='a',
                 location='form',
-                required=True
+                required=True,
+                schema=coreschema.String()
             ),
             coreapi.Field(
                 name='b',
-                location='form'
+                location='form',
+                schema=coreschema.String()
             )
         ]
     )
@@ -164,7 +173,8 @@ def test_mapping():
             coreapi.Field(
                 name='example',
                 location='body',
-                required=True
+                required=True,
+                schema=coreschema.String()
             )
         ]
     )
@@ -178,7 +188,8 @@ def test_mapping():
         fields=[
             coreapi.Field(
                 name='example',
-                location='body'
+                location='body',
+                schema=coreschema.String()
             )
         ]
     )
@@ -190,7 +201,9 @@ def test_mapping():
         fields=[
             coreapi.Field(
                 name='example',
-                location='body'
+                location='body',
+
+                schema=coreschema.String()
             )
         ]
     )
