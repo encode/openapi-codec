@@ -1,6 +1,7 @@
 from coreapi import Document, Link, Field
 from coreapi.compat import string_types, urlparse
 from coreapi.exceptions import ParseError
+import coreschema
 
 
 def _parse_document(data, base_url=None):
@@ -43,7 +44,7 @@ def _parse_document(data, base_url=None):
                                 name=field_name,
                                 location='form',
                                 required=is_required,
-                                schema=coreschema.Anything(description=field_description)
+                                schema=coreschema.String(description=field_description)
                             )
                             for field_name, is_required, field_description in expanded
                             if not any([field.name == field_name for field in fields])
@@ -56,7 +57,7 @@ def _parse_document(data, base_url=None):
                             name=name,
                             location='body',
                             required=required,
-                            schema=coreschema.Anything(description=field_description)
+                            schema=coreschema.String(description=field_description)
                         )
                         fields.append(field)
                 else:
@@ -69,7 +70,7 @@ def _parse_document(data, base_url=None):
                         name=name,
                         location=location,
                         required=required,
-                        schema=coreschema.Anything(description=field_description)
+                        schema=coreschema.String(description=field_description)
                     )
                     fields.append(field)
 

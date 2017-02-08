@@ -1,4 +1,5 @@
 import coreapi
+import coreschema
 from openapi_codec.encode import generate_swagger_object, _get_parameters
 from unittest import TestCase
 
@@ -86,7 +87,7 @@ class TestParameters(TestCase):
             name='email',
             required=True,
             location='query',
-            description='A valid email address.'
+            schema=coreschema.String(description='A valid email address.')
         )
         self.swagger = _get_parameters(coreapi.Link(fields=[self.field]), encoding='')
 
@@ -96,7 +97,7 @@ class TestParameters(TestCase):
             'name': self.field.name,
             'required': self.field.required,
             'in': 'query',
-            'description': self.field.description,
+            'description': self.field.schema.description,
             'type': 'string'  # Everything is a string for now.
         }
         self.assertEquals(self.swagger[0], expected)

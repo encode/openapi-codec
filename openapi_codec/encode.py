@@ -123,6 +123,7 @@ def _get_parameters(link, encoding):
     for field in link.fields:
         location = get_location(link, field)
         field_description = field.schema.description if field.schema else ''
+        field_type = _get_schema_type(field.schema)
         if location == 'form':
             if encoding in ('multipart/form-data', 'application/x-www-form-urlencoded'):
                 # 'formData' in swagger MUST be one of these media types.
@@ -131,23 +132,20 @@ def _get_parameters(link, encoding):
                     'required': field.required,
                     'in': 'formData',
                     'description': field_description,
-                    'type': field.type or 'string',
+                    'type': field_type,
                 }
-                if field.type == 'array':
+                if field_type == 'array':
                     parameter['items'] = {'type': 'string'}
                 parameters.append(parameter)
             else:
                 # Expand coreapi fields with location='form' into a single swagger
                 # parameter, with a schema containing multiple properties.
-                use_type = field.type or 'string'
-                if use_type == 'file':
-                    use_type = 'string'
 
                 schema_property = {
                     'description': field_description,
-                    'type': use_type,
+                    'type': field_type,
                 }
-                if field.type == 'array':
+                if field_type == 'array':
                     schema_property['items'] = {'type': 'string'}
                 properties[field.name] = schema_property
                 if field.required:
@@ -172,9 +170,9 @@ def _get_parameters(link, encoding):
                 'required': field.required,
                 'in': location,
                 'description': field_description,
-                'type': field.type or 'string',
+                'type': field_type or 'string',
             }
-            if field.type == 'array':
+            if field_type == 'array':
                 parameter['items'] = {'type': 'string'}
             parameters.append(parameter)
 
