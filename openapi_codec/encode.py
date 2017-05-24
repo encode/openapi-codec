@@ -79,6 +79,7 @@ def _get_paths_object(document):
 def _get_operation(operation_id, link, tags):
     encoding = get_encoding(link)
     description = link.description.strip()
+    custom_attributes = link.custom_attributes
     summary = description.splitlines()[0] if description else None
 
     operation = {
@@ -95,6 +96,9 @@ def _get_operation(operation_id, link, tags):
         operation['consumes'] = [encoding]
     if tags:
         operation['tags'] = tags
+    if custom_attributes:
+        for key in custom_attributes:
+            operation[key] = custom_attributes[key]
     return operation
 
 
@@ -127,6 +131,10 @@ def _get_field_type(field):
     }.get(field.schema.__class__, 'string')
 
 
+def _get_field_custom_attributes(field):
+    return getattr(field, 'custom_attributes', None)
+
+
 def _get_parameters(link, encoding):
     """
     Generates Swagger Parameter Item object.
@@ -139,6 +147,7 @@ def _get_parameters(link, encoding):
         location = get_location(link, field)
         field_description = _get_field_description(field)
         field_type = _get_field_type(field)
+        field_custom_attributes = _get_field_custom_attributes(field)
         if location == 'form':
             if encoding in ('multipart/form-data', 'application/x-www-form-urlencoded'):
                 # 'formData' in swagger MUST be one of these media types.
@@ -189,6 +198,10 @@ def _get_parameters(link, encoding):
             }
             if field_type == 'array':
                 parameter['items'] = {'type': 'string'}
+            if field_custom_attributes:
+                # custom attributes can only be set when location is not body
+                for key in field_custom_attributes:
+                    parameter[key] = field_custom_attributes[key]
             parameters.append(parameter)
 
     if properties:
