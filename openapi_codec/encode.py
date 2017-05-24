@@ -79,7 +79,7 @@ def _get_paths_object(document):
 def _get_operation(operation_id, link, tags):
     encoding = get_encoding(link)
     description = link.description.strip()
-    custom_attributes = link.custom_attributes
+    custom_attributes = getattr(link, 'custom_attributes', None)
     summary = description.splitlines()[0] if description else None
 
     operation = {
