@@ -155,8 +155,6 @@ class TestDefinitions(TestCase):
 
     def test_basic_definitions(self):
 
-        print self.definitions
-
         self.assertIn('definitions', self.swagger)
         self.assertIn('dummy_object', self.definitions)
         self.assertIn('dummy_array_item', self.definitions)
