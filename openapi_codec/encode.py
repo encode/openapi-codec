@@ -46,7 +46,7 @@ def _get_definitions(document):
         else:
             props = field_item.schema.properties
 
-        for f_name, f_schema in props.iteritems():
+        for f_name, f_schema in iter(props.items()):
 
             if _get_field_type(f_schema) is 'object':
                 defs[f_name] = get_field_def_data(f_schema, defs)
