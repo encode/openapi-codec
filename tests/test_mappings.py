@@ -202,7 +202,6 @@ def test_mapping():
             coreapi.Field(
                 name='example',
                 location='body',
-
                 schema=coreschema.String()
             )
         ]

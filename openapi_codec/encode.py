@@ -1,5 +1,6 @@
 import coreschema
 from collections import OrderedDict
+from coreapi.document import Field
 from coreapi.compat import urlparse
 from openapi_codec.utils import get_method, get_encoding, get_location, get_links_from_document
 
@@ -23,15 +24,61 @@ def generate_swagger_object(document):
         swagger['schemes'] = [parsed_url.scheme]
 
     swagger['paths'] = _get_paths_object(document)
+    swagger['definitions'] = _get_definitions(document)
 
     return swagger
+
+
+def _get_definitions(document):
+
+    definitions = dict()
+    links = _get_links(document)
+
+    def get_field_def_data(field_item, defs):
+
+        definition_data = {
+            'type': 'object',
+            'properties': {}
+        }
+
+        if isinstance(field_item, coreschema.Object):
+            props = field_item.properties
+        else:
+            props = field_item.schema.properties
+
+        for f_name, f_schema in props.iteritems():
+
+            if _get_field_type(f_schema) is 'object':
+                defs[f_name] = get_field_def_data(f_schema, defs)
+                definition_data['properties'][f_name] = {
+                    '$ref': '#/definitions/{}'.format(f_name)
+                }
+            else:
+                definition_data['properties'][f_name] = {
+                    'type': _get_field_type(f_schema),
+                    'description': ''
+                }
+
+        return definition_data
+
+    for _, link, _ in links:
+        for field in link.fields:
+            field_type = _get_field_type(field)
+            if field_type == 'object':
+                definitions[field.name] = get_field_def_data(field, definitions)
+
+            if field_type == 'array':
+                item_name = '{}_item'.format(field.name)
+                definitions[item_name] = get_field_def_data(field.schema.items, definitions)
+
+    return definitions
 
 
 def _add_tag_prefix(item):
     operation_id, link, tags = item
     if tags:
         operation_id = tags[0] + '_' + operation_id
-    return (operation_id, link, tags)
+    return operation_id, link, tags
 
 
 def _get_links(document):
@@ -114,8 +161,10 @@ def _get_field_type(field):
         # Deprecated
         return field.type
 
-    if field.schema is None:
-        return 'string'
+    if isinstance(field, Field):
+        cls = field.schema.__class__
+    else:
+        cls = field.__class__
 
     return {
         coreschema.String: 'string',
@@ -124,7 +173,7 @@ def _get_field_type(field):
         coreschema.Boolean: 'boolean',
         coreschema.Array: 'array',
         coreschema.Object: 'object',
-    }.get(field.schema.__class__, 'string')
+    }.get(cls, 'string')
 
 
 def _get_parameters(link, encoding):
@@ -160,8 +209,14 @@ def _get_parameters(link, encoding):
                     'description': field_description,
                     'type': field_type,
                 }
+
                 if field_type == 'array':
-                    schema_property['items'] = {'type': 'string'}
+                    item_name = '{}_item'.format(field.name)
+                    schema_property['items'] = {'$ref': '#/definitions/{}'.format(item_name)}
+
+                if field_type == 'object':
+                    schema_property = {'$ref': '#/definitions/{}'.format(field.name)}
+
                 properties[field.name] = schema_property
                 if field.required:
                     required.append(field.name)
