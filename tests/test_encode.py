@@ -13,7 +13,8 @@ class TestBasicInfo(TestCase):
         self.assertIn('info', self.swagger)
         expected = {
             'title': self.document.title,
-            'version': ''
+            'version': '',
+            'description': ''
         }
         self.assertEquals(self.swagger['info'], expected)
 
@@ -31,6 +32,21 @@ class TestBasicInfo(TestCase):
         self.assertIn('schemes', self.swagger)
         expected = ['https']
         self.assertEquals(self.swagger['schemes'], expected)
+
+
+class TestInfoDescription(TestCase):
+    def setUp(self):
+        self.document = coreapi.Document(title='Example API', url='https://www.example.com/', description='Welcome to API Docs')
+        self.swagger = generate_swagger_object(self.document)
+
+    def test_info(self):
+        self.assertIn('info', self.swagger)
+        expected = {
+            'title': self.document.title,
+            'version': '',
+            'description': self.document.description
+        }
+        self.assertEquals(self.swagger['info'], expected)
 
 
 class TestPaths(TestCase):
