@@ -31,7 +31,7 @@ def generate_swagger_object(document):
 
 def _get_definitions(document):
 
-    definitions = dict()
+    definitions = OrderedDict()
     links = _get_links(document)
 
     def get_field_def_data(field_item, defs):
