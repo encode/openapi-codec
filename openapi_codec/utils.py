@@ -30,6 +30,10 @@ def get_method(link):
     return method
 
 
+def get_parameter_name(link):
+    return link.title.title() + link.action.title() + "Params"
+
+
 def get_encoding(link):
     encoding = link.encoding
     has_body = any([get_location(link, field) in ('form', 'body') for field in link.fields])
