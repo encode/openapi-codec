@@ -128,6 +128,26 @@ def _get_field_type(field):
     }.get(field.schema.__class__, 'string')
 
 
+def _get_property_type(the_schema):
+    return {
+        coreschema.String: 'string',
+        coreschema.Integer: 'integer',
+        coreschema.Number: 'number',
+        coreschema.Boolean: 'boolean',
+        coreschema.Array: 'array',
+        coreschema.Object: 'object',
+    }.get(the_schema.__class__, 'string')
+
+
+def _field_properties_for_fields(field__schema_properties):
+    field_properties = {}
+    for k in field__schema_properties:
+        field_properties[k] = {
+            'type': _get_property_type(field__schema_properties[k])
+        }
+    return field_properties
+
+
 def _get_parameters(link, encoding):
     """
     Generates Swagger Parameter Item object.
@@ -161,8 +181,28 @@ def _get_parameters(link, encoding):
                     'description': field_description,
                     'type': field_type,
                 }
+                if field_type == 'object':
+                    field_properties = _field_properties_for_fields(field.schema.properties)
+                    schema_property = {
+                        'description': field_description,
+                        'type': field_type,
+                        'properties': field_properties
+                    }
                 if field_type == 'array':
-                    schema_property['items'] = {'type': 'string'}
+                    if hasattr(field.schema.items, 'properties'):
+                        # the array contains object instances, we need to inspect their properties
+                        field_properties = _field_properties_for_fields(
+                            field.schema.items.properties
+                        )
+                        schema_property['items'] = {
+                            'type': 'object',
+                            'properties': field_properties
+                        }
+                    else:
+                        # the array contains primitive types
+                        schema_property['items'] = {
+                            'type': _get_property_type(field.schema.items),
+                        }
                 properties[field.name] = schema_property
                 if field.required:
                     required.append(field.name)
