@@ -1,7 +1,7 @@
 import coreschema
 from collections import OrderedDict
 from coreapi.compat import urlparse
-from openapi_codec.utils import get_method, get_encoding, get_location, get_links_from_document
+from openapi_codec.utils import get_method, get_encoding, get_location, get_links_from_document, get_parameter_name
 
 
 def generate_swagger_object(document):
@@ -193,8 +193,9 @@ def _get_parameters(link, encoding):
             parameters.append(parameter)
 
     if properties:
+        parameter_name = get_parameter_name(link)
         parameter = {
-            'name': 'data',
+            'name': parameter_name,
             'in': 'body',
             'schema': {
                 'type': 'object',
