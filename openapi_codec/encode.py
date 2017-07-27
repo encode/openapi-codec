@@ -171,7 +171,7 @@ def _get_parameters(link, encoding):
                 # https://github.com/OAI/OpenAPI-Specification/issues/50#issuecomment-112063782
                 schema = {'type': 'string', 'format': 'binary'}
             else:
-                schema = {}
+                schema = getattr(field, 'schema', {})
             parameter = {
                 'name': field.name,
                 'required': field.required,
