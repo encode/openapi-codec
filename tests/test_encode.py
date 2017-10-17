@@ -106,3 +106,26 @@ class TestParameters(TestCase):
             'type': 'string'  # Everything is a string for now.
         }
         self.assertEquals(self.swagger[0], expected)
+
+
+class TestFormat(TestCase):
+    def setUp(self):
+        self.field = coreapi.Field(
+            name='published_before',
+            required=True,
+            location='query',
+            schema=coreschema.String(description='Filter by published date.', format='date')
+        )
+        self.swagger = _get_parameters(coreapi.Link(fields=[self.field]), encoding='')
+
+    def test_expected_fields(self):
+        self.assertEquals(len(self.swagger), 1)
+        expected = {
+            'name': self.field.name,
+            'required': self.field.required,
+            'in': 'query',
+            'description': self.field.schema.description,
+            'type': 'string',
+            'format': 'date'
+        }
+        self.assertEquals(self.swagger[0], expected)
