@@ -44,9 +44,9 @@ def _parse_document(data, base_url=None):
                                 name=field_name,
                                 location='form',
                                 required=is_required,
-                                schema=coreschema.String(description=field_description)
+                                schema=coreschema.String(description=field_description, format=field_format)
                             )
-                            for field_name, is_required, field_description in expanded
+                            for field_name, is_required, field_description, field_format in expanded
                             if not any([field.name == field_name for field in fields])
                         ]
                         fields += expanded_fields
@@ -188,7 +188,7 @@ def _expand_schema(schema):
     schema_required = _get_list(schema, 'required')
     if ((schema_type == ['object']) or (schema_type == 'object')) and schema_properties:
         return [
-            (key, key in schema_required, schema_properties[key].get('description'))
+            (key, key in schema_required, schema_properties[key].get('description'), schema_properties[key].get('format'))
             for key in schema_properties.keys()
         ]
     return None

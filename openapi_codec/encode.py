@@ -128,6 +128,10 @@ def _get_field_type(field):
     }.get(field.schema.__class__, 'string')
 
 
+def _get_field_format(field):
+    return field.schema and getattr(field.schema, 'format', None)
+
+
 def _get_parameters(link, encoding):
     """
     Generates Swagger Parameter Item object.
@@ -140,6 +144,7 @@ def _get_parameters(link, encoding):
         location = get_location(link, field)
         field_description = _get_field_description(field)
         field_type = _get_field_type(field)
+        field_format = _get_field_format(field)
         if location == 'form':
             if encoding in ('multipart/form-data', 'application/x-www-form-urlencoded'):
                 # 'formData' in swagger MUST be one of these media types.
@@ -152,6 +157,8 @@ def _get_parameters(link, encoding):
                 }
                 if field_type == 'array':
                     parameter['items'] = {'type': 'string'}
+                if field_format:
+                    parameter['format'] = field_format
                 parameters.append(parameter)
             else:
                 # Expand coreapi fields with location='form' into a single swagger
@@ -179,6 +186,8 @@ def _get_parameters(link, encoding):
                 'description': field_description,
                 'schema': schema
             }
+            if field_format:
+                parameter['format'] = field_format
             parameters.append(parameter)
         else:
             parameter = {
@@ -190,6 +199,8 @@ def _get_parameters(link, encoding):
             }
             if field_type == 'array':
                 parameter['items'] = {'type': 'string'}
+            if field_format:
+                parameter['format'] = field_format
             parameters.append(parameter)
 
     if properties:
