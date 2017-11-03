@@ -129,3 +129,25 @@ class TestFormat(TestCase):
             'format': 'date'
         }
         self.assertEquals(self.swagger[0], expected)
+
+
+class TestIntegerField(TestCase):
+    def setUp(self):
+        self.field = coreapi.Field(
+            name='page',
+            required=True,
+            location='query',
+            schema=coreschema.Integer(description='A page number.')
+        )
+        self.swagger = _get_parameters(coreapi.Link(fields=[self.field]), encoding='')
+
+    def test_expected_fields(self):
+        self.assertEquals(len(self.swagger), 1)
+        expected = {
+            'name': self.field.name,
+            'required': self.field.required,
+            'in': 'query',
+            'description': self.field.schema.description,
+            'type': 'integer'
+        }
+        self.assertEquals(self.swagger[0], expected)

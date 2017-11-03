@@ -129,7 +129,7 @@ def _get_field_type(field):
 
 
 def _get_field_format(field):
-    return field.schema and field.schema.format
+    return field.schema and getattr(field.schema, 'format', None)
 
 
 def _get_parameters(link, encoding):
