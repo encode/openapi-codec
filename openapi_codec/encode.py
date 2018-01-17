@@ -1,4 +1,7 @@
+import random
+import string
 import coreschema
+
 from collections import OrderedDict
 from coreapi.document import Field
 from coreapi.compat import urlparse
@@ -23,10 +26,62 @@ def generate_swagger_object(document):
     if parsed_url.scheme:
         swagger['schemes'] = [parsed_url.scheme]
 
-    swagger['paths'] = _get_paths_object(document)
     swagger['definitions'] = _get_definitions(document)
+    swagger['paths'] = _get_paths_object(document, swagger['definitions'])
 
     return swagger
+
+
+def _get_or_update_definitions(update_def_data, update_def_name, definitions):
+
+    # Check if there's existing definition with same or props
+    clashing_def_names = filter(lambda d: d.startswith(update_def_name) or definitions.get(d) == update_def_data, definitions.keys())
+
+    for clashing_def_name in clashing_def_names:
+        clash_def_data = definitions.get(clashing_def_name)
+        if clash_def_data == update_def_data:
+            return clash_def_data
+    else:
+        if clashing_def_names:
+            rand_part = ''.join([random.choice(string.letters + string.digits) for _ in range(5)])
+            update_def_name = '{}_{}'.format(update_def_name, rand_part)
+        definitions[update_def_name] = update_def_data
+        return update_def_data
+
+    return None
+
+
+def _get_field_definition_data(field_item, defs):
+
+    definition_data = {
+        'type': 'object',
+        'properties': {}
+    }
+
+    if isinstance(field_item, coreschema.Object):
+        props = field_item.properties
+    elif isinstance(field_item.schema, coreschema.schemas.Array):
+        props = field_item.schema.items.properties
+    else:
+        props = field_item.schema.properties
+
+    for f_name, f_schema in iter(props.items()):
+
+        if _get_field_type(f_schema) is 'object':
+            def_data = _get_or_update_definitions(
+                _get_field_definition_data(f_schema, defs),
+                '{}_def_item'.format(f_schema.name),
+                defs
+            )
+            if def_data:
+                return def_data
+        else:
+            definition_data['properties'][f_name] = {
+                'type': _get_field_type(f_schema),
+                'description': ''
+            }
+
+    return definition_data
 
 
 def _get_definitions(document):
@@ -34,42 +89,21 @@ def _get_definitions(document):
     definitions = OrderedDict()
     links = _get_links(document)
 
-    def get_field_def_data(field_item, defs):
-
-        definition_data = {
-            'type': 'object',
-            'properties': {}
-        }
-
-        if isinstance(field_item, coreschema.Object):
-            props = field_item.properties
-        else:
-            props = field_item.schema.properties
-
-        for f_name, f_schema in iter(props.items()):
-
-            if _get_field_type(f_schema) is 'object':
-                defs[f_name] = get_field_def_data(f_schema, defs)
-                definition_data['properties'][f_name] = {
-                    '$ref': '#/definitions/{}'.format(f_name)
-                }
-            else:
-                definition_data['properties'][f_name] = {
-                    'type': _get_field_type(f_schema),
-                    'description': ''
-                }
-
-        return definition_data
-
     for _, link, _ in links:
         for field in link.fields:
             field_type = _get_field_type(field)
-            if field_type == 'object':
-                definitions[field.name] = get_field_def_data(field, definitions)
 
-            if field_type == 'array':
-                item_name = '{}_item'.format(field.name)
-                definitions[item_name] = get_field_def_data(field.schema.items, definitions)
+            # Get field definition data
+            if field_type == 'object':
+                def_data = _get_field_definition_data(field, definitions)
+            elif field_type == 'array':
+                def_data = _get_field_definition_data(field.schema.items, definitions)
+
+            _get_or_update_definitions(
+                def_data,
+                '{}_def_item'.format(field.name),
+                definitions
+            )
 
     return definitions
 
@@ -107,7 +141,7 @@ def _get_links(document):
     return links
 
 
-def _get_paths_object(document):
+def _get_paths_object(document, definitions):
     paths = OrderedDict()
 
     links = _get_links(document)
@@ -117,13 +151,13 @@ def _get_paths_object(document):
             paths[link.url] = OrderedDict()
 
         method = get_method(link)
-        operation = _get_operation(operation_id, link, tags)
+        operation = _get_operation(operation_id, link, tags, definitions)
         paths[link.url].update({method: operation})
 
     return paths
 
 
-def _get_operation(operation_id, link, tags):
+def _get_operation(operation_id, link, tags, definitions):
     encoding = get_encoding(link)
     description = link.description.strip()
     summary = description.splitlines()[0] if description else None
@@ -131,7 +165,7 @@ def _get_operation(operation_id, link, tags):
     operation = {
         'operationId': operation_id,
         'responses': _get_responses(link),
-        'parameters': _get_parameters(link, encoding)
+        'parameters': _get_parameters(link, encoding, definitions)
     }
 
     if description:
@@ -176,7 +210,7 @@ def _get_field_type(field):
     }.get(cls, 'string')
 
 
-def _get_parameters(link, encoding):
+def _get_parameters(link, encoding, definitions):
     """
     Generates Swagger Parameter Item object.
     """
@@ -210,12 +244,17 @@ def _get_parameters(link, encoding):
                     'type': field_type,
                 }
 
-                if field_type == 'array':
-                    item_name = '{}_item'.format(field.name)
-                    schema_property['items'] = {'$ref': '#/definitions/{}'.format(item_name)}
+                if field_type in ('object', 'array'):
+                    definition_data = _get_field_definition_data(field, definitions).get('properties')
+                    definition = filter(lambda d: definitions.get(d).get('properties') == definition_data, definitions)[0]
 
-                if field_type == 'object':
-                    schema_property = {'$ref': '#/definitions/{}'.format(field.name)}
+                    schema_property = {'$ref': '#/definitions/{}'.format(definition)}
+                    if field_type == 'array':
+                        schema_property.pop('$ref')
+                        schema_property['type'] = 'array'
+                        schema_property['items'] = {
+                            '$ref': '#/definitions/{}'.format(definition)
+                        }
 
                 properties[field.name] = schema_property
                 if field.required:
