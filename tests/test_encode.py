@@ -96,7 +96,7 @@ class TestParameters(TestCase):
             location='query',
             schema=coreschema.String(description='A valid email address.')
         )
-        self.swagger = _get_parameters(coreapi.Link(fields=[self.field]), encoding='')
+        self.swagger = _get_parameters(coreapi.Link(fields=[self.field]), encoding='', definitions=OrderedDict())
 
     def test_expected_fields(self):
         self.assertEquals(len(self.swagger), 1)
@@ -114,80 +114,76 @@ class TestDefinitions(TestCase):
 
     def setUp(self):
 
-        obj_props = OrderedDict()
-        obj_props['foo'] = coreschema.String()
-        obj_props['bar'] = coreschema.Integer()
+        # Clashing name
+        self.clashing_name = 'author'
 
-        self.object_field = coreapi.Field(
-            name='dummy_object',
+        # Schema objects
+        name_schema_obj = coreschema.schemas.Object(
+            properties=OrderedDict({'name': coreschema.schemas.String(description='name')})
+        )
+        bday_schema_obj = coreschema.schemas.Object(
+            properties=OrderedDict({'birthday': coreschema.schemas.String(description='birthday')})
+        )
+
+        # Fields
+        author_field = coreapi.Field(
+            name='author',
             required=True,
             location='form',
-            schema=coreschema.Object(
-                properties=obj_props
-            )
+            schema=name_schema_obj
         )
-
-        self.array_field = coreapi.Field(
-            name='dummy_array',
+        clashing_author_field = coreapi.Field(
+            name='author',
+            required=True,
             location='form',
-            schema=coreschema.Array(
-                items=self.object_field
+            schema=bday_schema_obj
+        )
+        co_authoors_field = coreapi.Field(
+            name='co_authoors',
+            required=True,
+            location='form',
+            schema=coreschema.schemas.Array(
+                items=bday_schema_obj
             )
         )
 
-        self.link = coreapi.Link(
-            action='post',
-            url='/users/',
-            fields=[self.object_field, self.array_field]
+        # Link objects
+        v1_songs_link = coreapi.Link(
+            url='/api/v1/songs/',
+            action=u'post',
+            encoding=u'application/json',
+            fields=[author_field],
+        )
+        v2_songs_link = coreapi.Link(
+            url='/api/v2/songs/',
+            action=u'post',
+            encoding=u'application/json',
+            fields=[clashing_author_field, co_authoors_field],
         )
 
+        self.links = OrderedDict({
+            'v1': OrderedDict({'list': v1_songs_link}),
+            'v2': OrderedDict({'list': v2_songs_link})
+        })
+
+        # Coreapi document object
         self.document = coreapi.Document(
-            content={
-                'users': {
-                    'create': self.link,
-                }
-            }
+            'test api',
+            content=self.links
         )
 
+        # Init definitions and swagger object
         self.definitions = _get_definitions(self.document)
-        self.parameters = _get_parameters(self.link, '')
         self.swagger = generate_swagger_object(self.document)
 
-    def test_basic_definitions(self):
+    def test_clashing_names(self):
 
+        # Basic checks
         self.assertIn('definitions', self.swagger)
-        self.assertIn('dummy_object', self.definitions)
-        self.assertIn('dummy_array_item', self.definitions)
+        self.assertEqual(len(self.swagger['definitions'].keys()), 2, 'Unexpected definitions count')
 
-        expected_dummy_object_def = {
-            'type': 'object',
-            'properties': {
-                'foo': {'type': 'string', 'description': ''},
-                'bar': {'type': 'integer', 'description': ''}
-            }
-        }
-
-        self.assertEqual(self.definitions.get('dummy_object'), expected_dummy_object_def)
-        self.assertEqual(self.definitions.get('dummy_array_item'), expected_dummy_object_def)
-
-        expected_dummy_parameters = [{
-            'schema': {
-                'required': ['dummy_object'],
-                'type': 'object',
-                'properties': {
-                    'dummy_array': {
-                        'items': {
-                            '$ref': '#/definitions/dummy_array_item'
-                        },
-                        'type': 'array',
-                        'description': ''
-                    },
-                    'dummy_object': {
-                        '$ref': '#/definitions/dummy_object'
-                    }
-                }
-            },
-            'name': 'data',
-            'in': 'body'
-        }]
-        self.assertEqual(self.parameters, expected_dummy_parameters)
+        # Check nothing unexpected is in definitions
+        defs = filter(
+            lambda d: d.startswith('{}_def_item'.format(self.clashing_name)), self.swagger['definitions'].keys()
+        )
+        self.assertEqual(len(defs), 2, 'Unexpected definitions count')

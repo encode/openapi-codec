@@ -34,8 +34,11 @@ def generate_swagger_object(document):
 
 def _get_or_update_definitions(update_def_data, update_def_name, definitions):
 
-    # Check if there's existing definition with same or props
-    clashing_def_names = filter(lambda d: d.startswith(update_def_name) or definitions.get(d) == update_def_data, definitions.keys())
+    # Check if there's existing definition with same name or props
+    clashing_def_names = filter(
+        lambda d: d.startswith(update_def_name) or definitions.get(d) == update_def_data,
+        definitions.keys()
+    )
 
     for clashing_def_name in clashing_def_names:
         clash_def_data = definitions.get(clashing_def_name)
@@ -47,8 +50,6 @@ def _get_or_update_definitions(update_def_data, update_def_name, definitions):
             update_def_name = '{}_{}'.format(update_def_name, rand_part)
         definitions[update_def_name] = update_def_data
         return update_def_data
-
-    return None
 
 
 def _get_field_definition_data(field_item, defs):
@@ -63,7 +64,10 @@ def _get_field_definition_data(field_item, defs):
     elif isinstance(field_item.schema, coreschema.schemas.Array):
         props = field_item.schema.items.properties
     else:
-        props = field_item.schema.properties
+        try:
+            props = field_item.schema.properties
+        except AttributeError:
+            props = OrderedDict()
 
     for f_name, f_schema in iter(props.items()):
 
@@ -98,6 +102,8 @@ def _get_definitions(document):
                 def_data = _get_field_definition_data(field, definitions)
             elif field_type == 'array':
                 def_data = _get_field_definition_data(field.schema.items, definitions)
+            else:
+                def_data = _get_field_definition_data(field, definitions)
 
             _get_or_update_definitions(
                 def_data,
@@ -245,16 +251,19 @@ def _get_parameters(link, encoding, definitions):
                 }
 
                 if field_type in ('object', 'array'):
-                    definition_data = _get_field_definition_data(field, definitions).get('properties')
-                    definition = filter(lambda d: definitions.get(d).get('properties') == definition_data, definitions)[0]
+                    definition_data = _get_field_definition_data(field, definitions)
 
-                    schema_property = {'$ref': '#/definitions/{}'.format(definition)}
-                    if field_type == 'array':
-                        schema_property.pop('$ref')
-                        schema_property['type'] = 'array'
-                        schema_property['items'] = {
-                            '$ref': '#/definitions/{}'.format(definition)
-                        }
+                    definition_data = definition_data.get('properties')
+                    defs = filter(lambda d: definitions.get(d).get('properties') == definition_data, definitions)
+
+                    if defs:
+                        schema_property = {'$ref': '#/definitions/{}'.format(defs[0])}
+                        if field_type == 'array':
+                            schema_property.pop('$ref')
+                            schema_property['type'] = 'array'
+                            schema_property['items'] = {
+                                '$ref': '#/definitions/{}'.format(defs[0])
+                            }
 
                 properties[field.name] = schema_property
                 if field.required:
