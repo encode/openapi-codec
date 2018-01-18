@@ -139,7 +139,7 @@ class TestDefinitions(TestCase):
             schema=bday_schema_obj
         )
         co_authors_field = coreapi.Field(
-            name='co_authoors',
+            name='co_authors',
             required=True,
             location='form',
             schema=coreschema.schemas.Array(
@@ -200,9 +200,7 @@ class TestDefinitions(TestCase):
                      'required': ['author'],
                      'type': 'object',
                      'properties': {
-                         'author': {
-                             '$ref': '#/definitions/author_def_item'
-                         }
+                        'author': {'$ref': '#/definitions/author_def_item'}
                      }
                 },
                 'name': 'data',
@@ -216,15 +214,11 @@ class TestDefinitions(TestCase):
                     'required': ['author', 'co_authoors'],
                     'type': 'object',
                     'properties': {
-                        'co_authoors': {
-                            'items': {
-                                '$ref': '#/definitions/{}'.format(expected_def_name)
-                            },
+                        'co_authors': {
+                            'items': {'$ref': '#/definitions/{}'.format(expected_def_name)},
                             'type': 'array'
                         },
-                        'author': {
-                            '$ref': '#/definitions/{}'.format(expected_def_name)
-                        }
+                        'author': {'$ref': '#/definitions/{}'.format(expected_def_name)}
                     }
                 },
                 'name': 'data',
