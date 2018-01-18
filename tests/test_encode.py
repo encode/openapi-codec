@@ -187,3 +187,52 @@ class TestDefinitions(TestCase):
             lambda d: d.startswith('{}_def_item'.format(self.clashing_name)), self.swagger['definitions'].keys()
         )
         self.assertEqual(len(list(defs)), 2, 'Unexpected definitions count')
+
+        v1_list_params = _get_parameters(self.links['v1']['list'], '', self.definitions)
+        v2_list_params = _get_parameters(self.links['v2']['list'], '', self.definitions)
+
+        expected_def_name = filter(
+            lambda d: d.startswith('{}_def_item_'.format(self.clashing_name)),
+            self.definitions.keys()
+        )[0]
+
+        expected_v1_list_params = [
+            {
+                'schema': {
+                     'required': ['author'],
+                     'type': 'object',
+                     'properties': {
+                         'author': {
+                             '$ref': '#/definitions/author_def_item'
+                         }
+                     }
+                },
+                'name': 'data',
+                'in': 'body'
+            }
+        ]
+
+        expected_v2_list_params = [
+            {
+                'schema': {
+                    'required': ['author', 'co_authoors'],
+                    'type': 'object',
+                    'properties': {
+                        'co_authoors': {
+                            'items': {
+                                '$ref': '#/definitions/{}'.format(expected_def_name)
+                            },
+                            'type': 'array'
+                        },
+                        'author': {
+                            '$ref': '#/definitions/{}'.format(expected_def_name)
+                        }
+                    }
+                },
+                'name': 'data',
+                'in': 'body'
+            }
+        ]
+
+        self.assertEqual(v1_list_params, expected_v1_list_params, 'Unexpected definition params')
+        self.assertEqual(v2_list_params, expected_v2_list_params, 'Unexpected definition params')
