@@ -138,7 +138,7 @@ class TestDefinitions(TestCase):
             location='form',
             schema=bday_schema_obj
         )
-        co_authoors_field = coreapi.Field(
+        co_authors_field = coreapi.Field(
             name='co_authoors',
             required=True,
             location='form',
@@ -158,7 +158,7 @@ class TestDefinitions(TestCase):
             url='/api/v2/songs/',
             action=u'post',
             encoding=u'application/json',
-            fields=[clashing_author_field, co_authoors_field],
+            fields=[clashing_author_field, co_authors_field],
         )
 
         self.links = OrderedDict({
