@@ -36,6 +36,10 @@ def generate_swagger_object(document):
 
 
 def _get_or_update_definitions(update_def_data, update_def_name, definitions):
+    """
+    Updates definitions with provided data If definition is not present in map, returns found definition
+    data in case definition overlaps with existing one.
+    """
 
     # Check if there's existing definition with same name or props
     clashing_def_names = filter(
@@ -56,7 +60,9 @@ def _get_or_update_definitions(update_def_data, update_def_name, definitions):
 
 
 def _get_field_definition_data(field_item, defs):
-
+    """
+    Returns dictionary with field definition data.
+    """
     definition_data = {
         'type': 'object',
         'properties': {}
@@ -92,6 +98,9 @@ def _get_field_definition_data(field_item, defs):
 
 
 def _get_definitions(document):
+    """
+    Returns dictionary with schema definitions.
+    """
 
     definitions = OrderedDict()
     links = _get_links(document)
@@ -116,6 +125,10 @@ def _get_definitions(document):
 
 
 def _add_tag_prefix(item):
+    """
+    Returns tuple (operation_id, link, tags) with modified operation_id in case of tags.
+    """
+
     operation_id, link, tags = item
     if tags:
         operation_id = tags[0] + '_' + operation_id
@@ -124,7 +137,7 @@ def _add_tag_prefix(item):
 
 def _get_links(document):
     """
-    Return a list of (operation_id, link, [tags])
+    Return a list of (operation_id, link, [tags]).
     """
     # Extract all the links from the first or second level of the document.
     links = []
@@ -149,6 +162,9 @@ def _get_links(document):
 
 
 def _get_paths_object(document, definitions):
+    """
+    Returns dictionary with document paths.
+    """
     paths = OrderedDict()
 
     links = _get_links(document)
@@ -165,6 +181,10 @@ def _get_paths_object(document, definitions):
 
 
 def _get_operation(operation_id, link, tags, definitions):
+    """
+    Returns dictionary with operation parameters.
+    """
+
     encoding = get_encoding(link)
     description = link.description.strip()
     summary = description.splitlines()[0] if description else None
@@ -187,6 +207,10 @@ def _get_operation(operation_id, link, tags, definitions):
 
 
 def _get_field_description(field):
+    """
+    Returns field description.
+    """
+
     if getattr(field, 'description', None) is not None:
         # Deprecated
         return field.description
@@ -198,6 +222,9 @@ def _get_field_description(field):
 
 
 def _get_field_type(field):
+    """
+    Returns field string type by the given field schema.
+    """
     if getattr(field, 'type', None) is not None:
         # Deprecated
         return field.type
