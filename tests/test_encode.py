@@ -211,7 +211,7 @@ class TestDefinitions(TestCase):
         expected_v2_list_params = [
             {
                 'schema': {
-                    'required': ['author', 'co_authoors'],
+                    'required': ['author', 'co_authors'],
                     'type': 'object',
                     'properties': {
                         'co_authors': {

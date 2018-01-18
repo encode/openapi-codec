@@ -280,7 +280,7 @@ def _get_parameters(link, encoding, definitions):
                     definition_data = _get_field_definition_data(field, definitions)
 
                     definition_data = definition_data.get('properties')
-                    defs = [d for d in definitions if definitions.get(d).get('properties') == definition_data]
+                    defs = filter(lambda d: definitions.get(d).get('properties') == definition_data, definitions)
 
                     if defs:
                         # Note: Python2.X <-> Python3.X
