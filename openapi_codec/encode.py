@@ -101,9 +101,7 @@ def _get_definitions(document):
             field_type = _get_field_type(field)
 
             # Get field definition data
-            if field_type == 'object':
-                def_data = _get_field_definition_data(field, definitions)
-            elif field_type == 'array':
+            if field_type == 'array':
                 def_data = _get_field_definition_data(field.schema.items, definitions)
             else:
                 def_data = _get_field_definition_data(field, definitions)
