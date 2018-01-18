@@ -191,16 +191,8 @@ class TestDefinitions(TestCase):
         v1_list_params = _get_parameters(self.links['v1']['list'], '', self.definitions)
         v2_list_params = _get_parameters(self.links['v2']['list'], '', self.definitions)
 
-        expected_def_name = filter(
-            lambda d: d.startswith('{}_def_item_'.format(self.clashing_name)),
-            self.definitions.keys()
-        )
-
-        # NOTE: mind the Python3
-        try:
-            expected_def_name = expected_def_name[0]
-        except TypeError:
-            expected_def_name = next(expected_def_name)
+        expected_def_name = \
+            [d for d in self.definitions.keys() if d.startswith('{}_def_item_'.format(self.clashing_name))][0]
 
         expected_v1_list_params = [
             {

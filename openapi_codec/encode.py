@@ -42,17 +42,15 @@ def _get_or_update_definitions(update_def_data, update_def_name, definitions):
     """
 
     # Check if there's existing definition with same name or props
-    clashing_def_names = filter(
-        lambda d: d.startswith(update_def_name) or definitions.get(d) == update_def_data,
-        definitions.keys()
-    )
+    clashing_def_names = \
+        [d for d in definitions.keys() if d.startswith(update_def_name) or definitions.get(d) == update_def_data]
 
     for clashing_def_name in clashing_def_names:
         clash_def_data = definitions.get(clashing_def_name)
         if clash_def_data == update_def_data:
             return clash_def_data
     else:
-        if clashing_def_names:
+        if list(clashing_def_names):
             rand_part = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(5)])
             update_def_name = '{}_{}'.format(update_def_name, rand_part)
         definitions[update_def_name] = update_def_data
@@ -282,7 +280,7 @@ def _get_parameters(link, encoding, definitions):
                     definition_data = _get_field_definition_data(field, definitions)
 
                     definition_data = definition_data.get('properties')
-                    defs = filter(lambda d: definitions.get(d).get('properties') == definition_data, definitions)
+                    defs = [d for d in definitions if definitions.get(d).get('properties') == definition_data]
 
                     if defs:
                         # Note: Python2.X <-> Python3.X
