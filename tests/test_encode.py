@@ -1,6 +1,8 @@
 import coreapi
 import coreschema
-from openapi_codec.encode import generate_swagger_object, _get_parameters
+
+from collections import OrderedDict
+from openapi_codec.encode import generate_swagger_object, _get_parameters, _get_definitions
 from unittest import TestCase
 
 
@@ -36,6 +38,11 @@ class TestBasicInfo(TestCase):
         self.assertIn('schemes', self.swagger)
         expected = ['https']
         self.assertEquals(self.swagger['schemes'], expected)
+
+    def test_definitions(self):
+        self.assertIn('definitions', self.swagger)
+        expected = dict()
+        self.assertEquals(self.swagger['definitions'], expected)
 
 
 class TestPaths(TestCase):
@@ -94,7 +101,7 @@ class TestParameters(TestCase):
             location='query',
             schema=coreschema.String(description='A valid email address.')
         )
-        self.swagger = _get_parameters(coreapi.Link(fields=[self.field]), encoding='')
+        self.swagger = _get_parameters(coreapi.Link(fields=[self.field]), encoding='', definitions=OrderedDict())
 
     def test_expected_fields(self):
         self.assertEquals(len(self.swagger), 1)
@@ -106,3 +113,125 @@ class TestParameters(TestCase):
             'type': 'string'  # Everything is a string for now.
         }
         self.assertEquals(self.swagger[0], expected)
+
+
+class TestDefinitions(TestCase):
+
+    def setUp(self):
+
+        # Clashing name
+        self.clashing_name = 'author'
+
+        # Schema objects
+        name_schema_obj = coreschema.schemas.Object(
+            properties=OrderedDict({'name': coreschema.schemas.String(description='name')})
+        )
+        bday_schema_obj = coreschema.schemas.Object(
+            properties=OrderedDict({'birthday': coreschema.schemas.String(description='birthday')})
+        )
+
+        # Fields
+        author_field = coreapi.Field(
+            name='author',
+            required=True,
+            location='form',
+            schema=name_schema_obj
+        )
+        clashing_author_field = coreapi.Field(
+            name='author',
+            required=True,
+            location='form',
+            schema=bday_schema_obj
+        )
+        co_authors_field = coreapi.Field(
+            name='co_authors',
+            required=True,
+            location='form',
+            schema=coreschema.schemas.Array(
+                items=bday_schema_obj
+            )
+        )
+
+        # Link objects
+        v1_songs_link = coreapi.Link(
+            url='/api/v1/songs/',
+            action=u'post',
+            encoding=u'application/json',
+            fields=[author_field],
+        )
+        v2_songs_link = coreapi.Link(
+            url='/api/v2/songs/',
+            action=u'post',
+            encoding=u'application/json',
+            fields=[clashing_author_field, co_authors_field],
+        )
+
+        self.links = OrderedDict({
+            'v1': OrderedDict({'list': v1_songs_link}),
+            'v2': OrderedDict({'list': v2_songs_link})
+        })
+
+        # Coreapi document object
+        self.document = coreapi.Document(
+            'test api',
+            content=self.links
+        )
+
+        # Init definitions and swagger object
+        self.definitions = _get_definitions(self.document)
+        self.swagger = generate_swagger_object(self.document)
+
+    def test_clashing_names(self):
+
+        # Basic checks
+        self.assertIn('definitions', self.swagger)
+        self.assertEqual(len(self.swagger['definitions'].keys()), 2, 'Unexpected definitions count')
+
+        # Check nothing unexpected is in definitions
+        defs = filter(
+            lambda d: d.startswith('{}_def_item'.format(self.clashing_name)), self.swagger['definitions'].keys()
+        )
+        self.assertEqual(len(list(defs)), 2, 'Unexpected definitions count')
+
+        v1_list_params = _get_parameters(self.links['v1']['list'], '', self.definitions)
+        v2_list_params = _get_parameters(self.links['v2']['list'], '', self.definitions)
+
+        expected_def_name = \
+            [d for d in self.definitions.keys() if d.startswith('{}_def_item_'.format(self.clashing_name))][0]
+
+        expected_v1_list_params = [
+            {
+                'schema': {
+                    'required': ['author'],
+                    'type': 'object',
+                    'properties': {
+                        'author': {
+                            '$ref': '#/definitions/author_def_item'
+                        }
+                    }
+                },
+                'name': 'data',
+                'in': 'body'
+            }
+        ]
+
+        expected_v2_list_params = [
+            {
+                'schema': {
+                    'required': ['author', 'co_authors'],
+                    'type': 'object',
+                    'properties': {
+                        'co_authors': {
+                            'items': {'$ref': '#/definitions/{}'.format(expected_def_name)},
+                            'type': 'array'
+                        },
+                        'author': {'$ref': '#/definitions/{}'.format(expected_def_name)}
+                    }
+                },
+                'name': 'data',
+                'in': 'body'
+            }
+        ]
+
+        self.assertEqual(v1_list_params, expected_v1_list_params, 'Unexpected definition params')
+        self.assertEqual(v2_list_params, expected_v2_list_params, 'Unexpected definition params')
