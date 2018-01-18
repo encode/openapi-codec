@@ -46,7 +46,7 @@ def _get_or_update_definitions(update_def_data, update_def_name, definitions):
             return clash_def_data
     else:
         if clashing_def_names:
-            rand_part = ''.join([random.choice(string.letters + string.digits) for _ in range(5)])
+            rand_part = ''.join([random.choice(string.ascii_letters + string.digits) for _ in range(5)])
             update_def_name = '{}_{}'.format(update_def_name, rand_part)
         definitions[update_def_name] = update_def_data
         return update_def_data
