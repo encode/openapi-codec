@@ -26,6 +26,9 @@ def generate_swagger_object(document):
     if parsed_url.scheme:
         swagger['schemes'] = [parsed_url.scheme]
 
+    if not parsed_url.netloc and not parsed_url.scheme:
+        swagger['host'] = document.url
+
     swagger['definitions'] = _get_definitions(document)
     swagger['paths'] = _get_paths_object(document, swagger['definitions'])
 
