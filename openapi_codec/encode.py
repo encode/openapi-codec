@@ -257,12 +257,18 @@ def _get_parameters(link, encoding, definitions):
                     defs = filter(lambda d: definitions.get(d).get('properties') == definition_data, definitions)
 
                     if defs:
-                        schema_property = {'$ref': '#/definitions/{}'.format(defs[0])}
+                        # Note: Python2.X <-> Python3.X
+                        try:
+                            def_name = defs[0]
+                        except TypeError:
+                            def_name = next(defs)
+
+                        schema_property = {'$ref': '#/definitions/{}'.format(def_name)}
                         if field_type == 'array':
                             schema_property.pop('$ref')
                             schema_property['type'] = 'array'
                             schema_property['items'] = {
-                                '$ref': '#/definitions/{}'.format(defs[0])
+                                '$ref': '#/definitions/{}'.format(def_name)
                             }
 
                 properties[field.name] = schema_property

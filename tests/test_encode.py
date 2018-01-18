@@ -186,4 +186,4 @@ class TestDefinitions(TestCase):
         defs = filter(
             lambda d: d.startswith('{}_def_item'.format(self.clashing_name)), self.swagger['definitions'].keys()
         )
-        self.assertEqual(len(defs), 2, 'Unexpected definitions count')
+        self.assertEqual(len(list(defs)), 2, 'Unexpected definitions count')
