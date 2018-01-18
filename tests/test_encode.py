@@ -194,7 +194,13 @@ class TestDefinitions(TestCase):
         expected_def_name = filter(
             lambda d: d.startswith('{}_def_item_'.format(self.clashing_name)),
             self.definitions.keys()
-        )[0]
+        )
+
+        # NOTE: mind the Python3
+        try:
+            expected_def_name = expected_def_name[0]
+        except TypeError:
+            expected_def_name = next(expected_def_name)
 
         expected_v1_list_params = [
             {
