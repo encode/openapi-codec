@@ -197,11 +197,13 @@ class TestDefinitions(TestCase):
         expected_v1_list_params = [
             {
                 'schema': {
-                     'required': ['author'],
-                     'type': 'object',
-                     'properties': {
-                        'author': {'$ref': '#/definitions/author_def_item'}
-                     }
+                    'required': ['author'],
+                    'type': 'object',
+                    'properties': {
+                        'author': {
+                            '$ref': '#/definitions/author_def_item'
+                        }
+                    }
                 },
                 'name': 'data',
                 'in': 'body'
