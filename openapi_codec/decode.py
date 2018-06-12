@@ -28,7 +28,7 @@ def _parse_document(data, base_url=None):
             has_form = False
 
             fields = []
-            parameters = get_dicts(_get_list(operation, 'parameters', default_parameters), dereference_using=data)
+            parameters = get_dicts(_get_list(operation, 'parameters') + default_parameters, dereference_using=data)
             for parameter in parameters:
                 name = _get_string(parameter, 'name')
                 location = _get_string(parameter, 'in')
