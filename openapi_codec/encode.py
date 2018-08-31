@@ -110,6 +110,17 @@ def _get_field_description(field):
     return field.schema.description
 
 
+def _get_schema_type(schema):
+    return {
+        coreschema.String: 'string',
+        coreschema.Integer: 'integer',
+        coreschema.Number: 'number',
+        coreschema.Boolean: 'boolean',
+        coreschema.Array: 'array',
+        coreschema.Object: 'object',
+    }.get(schema.__class__, 'string')
+
+
 def _get_field_type(field):
     if getattr(field, 'type', None) is not None:
         # Deprecated
@@ -118,14 +129,30 @@ def _get_field_type(field):
     if field.schema is None:
         return 'string'
 
-    return {
-        coreschema.String: 'string',
-        coreschema.Integer: 'integer',
-        coreschema.Number: 'number',
-        coreschema.Boolean: 'boolean',
-        coreschema.Array: 'array',
-        coreschema.Object: 'object',
-    }.get(field.schema.__class__, 'string')
+    return _get_schema_type(field.schema)
+
+
+def _get_array_schema_items(field):
+    array_items = {}
+
+    if isinstance(field.schema.items, list):
+        raise TypeError('Swagger 2.0 spec does not allow the items property to be a list of item types.')
+
+    item_type = field.schema.items
+    if not isinstance(item_type, coreschema.Anything):
+        array_items['type'] = _get_schema_type(item_type) or 'string'
+        if isinstance(item_type, coreschema.Object) and field.schema.items.properties is not None:
+            # This is an Array of Objects
+            array_props = {}
+            for prop_key, prop_value in field.schema.items.properties.items():
+                array_props[prop_key] = {
+                    'description': getattr(prop_value, 'description', ''),
+                    'type': _get_schema_type(prop_value) or 'string',
+                }
+
+            array_items['properties'] = array_props
+
+    return array_items
 
 
 def _get_parameters(link, encoding):
@@ -151,7 +178,7 @@ def _get_parameters(link, encoding):
                     'type': field_type,
                 }
                 if field_type == 'array':
-                    parameter['items'] = {'type': 'string'}
+                    parameter['items'] = _get_array_schema_items(field)
                 parameters.append(parameter)
             else:
                 # Expand coreapi fields with location='form' into a single swagger
@@ -162,22 +189,27 @@ def _get_parameters(link, encoding):
                     'type': field_type,
                 }
                 if field_type == 'array':
-                    schema_property['items'] = {'type': 'string'}
+                    schema_property['items'] = _get_array_schema_items(field)
                 properties[field.name] = schema_property
                 if field.required:
                     required.append(field.name)
         elif location == 'body':
+            schema = {
+                'type': field_type or 'string',
+            }
+
             if encoding == 'application/octet-stream':
                 # https://github.com/OAI/OpenAPI-Specification/issues/50#issuecomment-112063782
                 schema = {'type': 'string', 'format': 'binary'}
-            else:
-                schema = {}
+            elif field_type == 'array':
+                schema['items'] = _get_array_schema_items(field)
+
             parameter = {
                 'name': field.name,
                 'required': field.required,
                 'in': location,
                 'description': field_description,
-                'schema': schema
+                'schema': schema,
             }
             parameters.append(parameter)
         else:
@@ -189,7 +221,7 @@ def _get_parameters(link, encoding):
                 'type': field_type or 'string',
             }
             if field_type == 'array':
-                parameter['items'] = {'type': 'string'}
+                parameter['items'] = _get_array_schema_items(field)
             parameters.append(parameter)
 
     if properties:

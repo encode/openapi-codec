@@ -8,3 +8,4 @@ site/
 __pycache__
 .cache
 .coverage
+.idea/

@@ -106,3 +106,26 @@ class TestParameters(TestCase):
             'type': 'string'  # Everything is a string for now.
         }
         self.assertEquals(self.swagger[0], expected)
+
+
+class TestDeprecatedFieldTypeParameters(TestCase):
+    def setUp(self):
+        self.field = coreapi.Field(
+            name='email',
+            required=True,
+            location='query',
+            description='A valid email address.',
+            type='string',
+        )
+        self.swagger = _get_parameters(coreapi.Link(fields=[self.field]), encoding='')
+
+    def test_expected_fields(self):
+        self.assertEquals(len(self.swagger), 1)
+        expected = {
+            'name': self.field.name,
+            'required': self.field.required,
+            'in': 'query',
+            'description': self.field.description,
+            'type': 'string'  # Everything is a string for now.
+        }
+        assert self.swagger[0] == expected
