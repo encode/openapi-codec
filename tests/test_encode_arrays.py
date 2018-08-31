@@ -123,6 +123,20 @@ class TestArrayParameters(TestCase):
             swagger = _get_parameters(coreapi.Link(fields=[d['python']]), encoding=self.encoding)
             self.assertEquals(swagger[0], d['json'], msg='Encoded JSON value didn\'t match for %s' % d['python'].description)
 
+    def test_unsupported_item_type(self):
+        field = coreapi.Field(
+            name='data',
+            required=True,
+            location='body',
+            description='Array of Strings and Integers',
+            schema=coreschema.Array(
+                items=[coreschema.String(), coreschema.Integer()],
+            )
+        )
+
+        with self.assertRaises(TypeError):
+            _get_parameters(coreapi.Link(fields=[field]), encoding=self.encoding)
+
 
 class TestArrayFormParameters(TestArrayParameters):
         def setUp(self):

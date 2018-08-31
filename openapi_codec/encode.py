@@ -135,6 +135,9 @@ def _get_field_type(field):
 def _get_array_schema_items(field):
     array_items = {}
 
+    if isinstance(field.schema.items, list):
+        raise TypeError('Swagger 2.0 spec does not allow the items property to be a list of item types.')
+
     item_type = field.schema.items
     if not isinstance(item_type, coreschema.Anything):
         array_items['type'] = _get_schema_type(item_type) or 'string'
