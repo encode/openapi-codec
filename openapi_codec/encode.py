@@ -118,6 +118,13 @@ def _get_field_type(field):
     if field.schema is None:
         return 'string'
 
+    return _get_field_type_name(field.schema.__class__)
+
+
+def _get_field_type_name(type):
+    if type is None:
+        return 'string'
+
     return {
         coreschema.String: 'string',
         coreschema.Integer: 'integer',
@@ -125,7 +132,7 @@ def _get_field_type(field):
         coreschema.Boolean: 'boolean',
         coreschema.Array: 'array',
         coreschema.Object: 'object',
-    }.get(field.schema.__class__, 'string')
+    }.get(type, 'string')
 
 
 def _get_parameters(link, encoding):
@@ -162,7 +169,14 @@ def _get_parameters(link, encoding):
                     'type': field_type,
                 }
                 if field_type == 'array':
-                    schema_property['items'] = {'type': 'string'}
+                    type_string = 'string'
+                    if hasattr(field, "schema") and hasattr(field.schema, "items") and field.schema.items is not None:
+                        if isinstance(field.schema.items, type):
+                            model_type = field.schema.items
+                        else:
+                            model_type = field.schema.items.__class__
+                        type_string = _get_field_type_name(model_type)
+                    schema_property['items'] = {'type': type_string}
                 properties[field.name] = schema_property
                 if field.required:
                     required.append(field.name)
